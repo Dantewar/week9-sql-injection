@@ -75,3 +75,20 @@ UNION SELECT NULL, NULL, NULL--';
 ORDER BY 3 worked, but ORDER BY 4 caused an error.
 This confirmed that the query returns 3 columns.
 UNION SELECT with three NULL values worked because the number of columns matched.
+
+## Lab 5 – Find a Column Containing Text
+
+**Status:** Solved
+
+**Payload:**
+`Gifts' UNION SELECT NULL,'x0tfxh',NULL--`
+
+**Explanation:**
+
+I used UNION SELECT to find a column that accepts text.
+
+The query contained three columns. I placed the required text in the second column and used NULL for the other two columns.
+
+The database accepted the query, and the lab was solved.
+
+**Result:** The second column can contain text.
