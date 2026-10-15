@@ -1,15 +1,14 @@
 
 function getProducts(category: string): string {
   const query =
-    "SELECT * FROM products WHERE category = '" +
+    "SELECT name, description FROM products WHERE category = '" +
     category +
-    "'";
+    "' AND released = 1";
 
   return query;
 }
 
 const normalInput = "Gifts";
-
 const unsafeInput = "Gifts' OR 1=1--";
 
 console.log("Normal query:");
